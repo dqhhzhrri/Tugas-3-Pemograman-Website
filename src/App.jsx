@@ -1,24 +1,17 @@
 import React, { useState } from "react";
+import { Routes, Route } from "react-router";
 import { initialProducts } from "./data/initialProducts";
-import Header from "./components/Header";
-import FilterBar from "./components/FilterBar";
-import ProductCard from "./components/ProductCard";
-import ProductFormModal from "./components/ProductFormModal";
-import DeleteConfirmModal from "./components/DeleteConfirmModal";
+
+// Import Layout & Pages
+import AppLayout from "./layouts/AppLayout";
+import DashboardPage from "./pages/DashboardPage";
+import ProductsPage from "./pages/ProductsPage";
+import ProductDetailPage from "./pages/ProductDetailPage";
+import SettingsPage from "./pages/SettingsPage";
+import NotFoundPage from "./pages/NotFoundPage";
 
 export default function App() {
   const [products, setProducts] = useState(initialProducts);
-  const [searchQuery, setSearchQuery] = useState("");
-
-  // State Modals
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [editingProduct, setEditingProduct] = useState(null);
-  const [deletingProduct, setDeletingProduct] = useState(null);
-
-  // Filter Produk berdasarkan pencarian
-  const filteredProducts = products.filter((p) =>
-    p.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
 
   // Handler Tambah Produk
   const handleAddProduct = (newProductData) => {
@@ -30,7 +23,7 @@ export default function App() {
   // Handler Edit Produk
   const handleEditProduct = (updatedData) => {
     setProducts(
-      products.map((p) => (p.id === editingProduct.id ? { ...p, ...updatedData } : p))
+      products.map((p) => (p.id === updatedData.id ? { ...p, ...updatedData } : p))
     );
   };
 
@@ -40,59 +33,37 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6 md:p-10 font-sans">
-      <div className="max-w-6xl mx-auto">
-        <Header onOpenAddModal={() => setIsAddModalOpen(true)} />
-        
-        <FilterBar
-          searchQuery={searchQuery}
-          setSearchQuery={setSearchQuery}
-          totalCount={filteredProducts.length}
-        />
+    <Routes>
+      {/* Nested Route: Menggunakan Shared Layout (Navbar tetap ada di semua halaman anak) */}
+      <Route path="/" element={<AppLayout />}>
+        {/* Index route untuk URL root "/"[cite: 48] */}
+        <Route index element={<DashboardPage />} />
 
-        {/* Grid Daftar Produk menggunakan .map() */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filteredProducts.map((product) => (
-            <ProductCard
-              key={product.id}
-              product={product}
-              onEdit={(prod) => setEditingProduct(prod)}
-              onDelete={(prod) => setDeletingProduct(prod)}
+        {/* Halaman Daftar Produk & CRUD */}
+        <Route
+          path="products"
+          element={
+            <ProductsPage
+              products={products}
+              onAddProduct={handleAddProduct}
+              onEditProduct={handleEditProduct}
+              onDeleteProduct={handleDeleteProduct}
             />
-          ))}
-        </div>
-
-        {filteredProducts.length === 0 && (
-          <div className="text-center py-12 text-gray-400">Tidak ada produk yang ditemukan.</div>
-        )}
-
-        <div className="mt-6 text-sm text-gray-500">
-          Menampilkan {filteredProducts.length} dari {products.length} produk
-        </div>
-
-        {/* Modal Tambah */}
-        <ProductFormModal
-          isOpen={isAddModalOpen}
-          onClose={() => setIsAddModalOpen(false)}
-          onSave={handleAddProduct}
+          }
         />
 
-        {/* Modal Edit */}
-        <ProductFormModal
-          isOpen={Boolean(editingProduct)}
-          onClose={() => setEditingProduct(null)}
-          onSave={handleEditProduct}
-          productToEdit={editingProduct}
+        {/* Dynamic Route untuk Detail Produk berdasarkan ID */}
+        <Route
+          path="products/:id"
+          element={<ProductDetailPage products={products} />}
         />
 
-        {/* Modal Hapus */}
-        <DeleteConfirmModal
-          isOpen={Boolean(deletingProduct)}
-          onClose={() => setDeletingProduct(null)}
-          onConfirm={handleDeleteProduct}
-          product={deletingProduct}
-        />
-      </div>
-    </div>
+        {/* Halaman Pengaturan */}
+        <Route path="settings" element={<SettingsPage />} />
+      </Route>
+
+      {/* Wildcard Route (*) untuk menangani Halaman 404 / URL tidak dikenal */}
+      <Route path="*" element={<NotFoundPage />} />
+    </Routes>
   );
 }
